@@ -32,22 +32,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api/blogs', blogRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Server is running' });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
-
-// Error handler middleware
-app.use(errorHandler);
-
 // Initialize database on startup
 let dbConnected = false;
 async function initializeDB() {
@@ -67,6 +51,22 @@ app.use(async (req, res, next) => {
   await initializeDB();
   next();
 });
+
+// Routes
+app.use('/api/blogs', blogRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'Server is running' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
+
+// Error handler middleware
+app.use(errorHandler);
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {
