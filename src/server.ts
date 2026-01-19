@@ -1,0 +1,66 @@
+import express, { Express } from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { connectDB } from './config/db.js';
+import blogRoutes from './routes/blogRoutes.js';
+import { errorHandler } from './middleware/errorHandler.js';
+
+dotenv.config();
+
+const app: Express = express();
+// Port handling: Vercel assigns port, otherwise use environment variable or default
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
+const CORS_ORIGINS = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
+// Middleware
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow non-browser requests like curl/postman (no origin)
+      if (!origin) return callback(null, true);
+      if (CORS_ORIGINS.includes(origin)) return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/blogs', blogRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'Server is running' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' });
+});
+
+// Error handler middleware
+app.use(errorHandler);
+
+// Connect to MongoDB and start server
+async function startServer() {
+  try {
+    await connectDB();
+    
+    app.listen(PORT, () => {
+      console.log(`\n✓ Server running on http://localhost:${PORT}`);
+      console.log(`✓ CORS enabled for: ${CORS_ORIGINS.join(', ')}\n`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

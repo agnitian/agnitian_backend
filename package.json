@@ -1,0 +1,36 @@
+{
+  "name": "agnitian-blog-backend",
+  "version": "1.0.0",
+  "description": "Blog backend API with Express and MongoDB",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint src/",
+    "seed": "node --loader ts-node/esm src/scripts/seed.ts"
+  },
+  "keywords": [
+    "blog",
+    "express",
+    "mongodb"
+  ],
+  "author": "Agnitian",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.0",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
