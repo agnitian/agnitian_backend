@@ -53,10 +53,10 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
-app.use('/api/blogs', blogRoutes);
+app.use('/blogs', blogRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ success: true, message: 'Server is running' });
 });
 
