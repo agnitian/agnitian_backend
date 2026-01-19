@@ -48,19 +48,44 @@ app.use((req, res) => {
 // Error handler middleware
 app.use(errorHandler);
 
-// Connect to MongoDB and start server
-async function startServer() {
-  try {
-    await connectDB();
-    
-    app.listen(PORT, () => {
-      console.log(`\n✓ Server running on http://localhost:${PORT}`);
-      console.log(`✓ CORS enabled for: ${CORS_ORIGINS.join(', ')}\n`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+// Initialize database on startup
+let dbConnected = false;
+async function initializeDB() {
+  if (!dbConnected) {
+    try {
+      await connectDB();
+      dbConnected = true;
+      console.log('✓ MongoDB connected successfully');
+    } catch (error) {
+      console.error('Database connection failed:', error);
+    }
   }
 }
 
-startServer();
+// Middleware to ensure DB is connected on each request (for serverless)
+app.use(async (req, res, next) => {
+  await initializeDB();
+  next();
+});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  async function startServer() {
+    try {
+      await connectDB();
+      
+      app.listen(PORT, () => {
+        console.log(`\n✓ Server running on http://localhost:${PORT}`);
+        console.log(`✓ CORS enabled for: ${CORS_ORIGINS.join(', ')}\n`);
+      });
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
+  }
+
+  startServer();
+}
+
+// Export app for Vercel serverless functions
+export default app;
