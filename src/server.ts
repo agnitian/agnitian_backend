@@ -1,6 +1,7 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
 import { connectDB } from './config/db.js';
 import blogRoutes from './routes/blogRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -8,84 +9,86 @@ import { errorHandler } from './middleware/errorHandler.js';
 dotenv.config();
 
 const app: Express = express();
-// Port handling: Vercel assigns port, otherwise use environment variable or default
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
+
+/* -------------------- CONFIG -------------------- */
+
+const PORT = Number(process.env.PORT) || 5000;
+
 const CORS_ORIGINS = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
   : ['http://localhost:3000', 'http://localhost:3001'];
 
-// Middleware
+/* -------------------- MIDDLEWARE -------------------- */
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser requests like curl/postman (no origin)
+      // Allow server-to-server / Postman / curl
       if (!origin) return callback(null, true);
-      if (CORS_ORIGINS.includes(origin)) return callback(null, true);
+
+      if (CORS_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+
       return callback(new Error('Not allowed by CORS'));
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true
   })
 );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize database on startup
-let dbConnected = false;
-async function initializeDB() {
-  if (!dbConnected) {
-    try {
-      await connectDB();
-      dbConnected = true;
-      console.log('✓ MongoDB connected successfully');
-    } catch (error) {
-      console.error('Database connection failed:', error);
-    }
+/* -------------------- DATABASE (SERVERLESS SAFE) -------------------- */
+
+let isDBConnected = false;
+
+async function ensureDB() {
+  if (!isDBConnected) {
+    await connectDB();
+    isDBConnected = true;
+    console.log('✓ MongoDB connected');
   }
 }
 
-// Middleware to ensure DB is connected on each request (for serverless)
-app.use(async (req, res, next) => {
-  await initializeDB();
+// Ensure DB connection for every request (cold starts)
+app.use(async (_req, _res, next) => {
+  await ensureDB();
   next();
 });
 
-// Routes
-app.use('/blogs', blogRoutes);
+/* -------------------- ROUTES -------------------- */
+
+// IMPORTANT: prefix with /api for Vercel
+app.use('/api/blogs', blogRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ success: true, message: 'Server is running' });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+/* -------------------- ERROR HANDLING -------------------- */
+
+// 404 handler (keep AFTER routes)
+app.use((_req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
 });
 
-// Error handler middleware
 app.use(errorHandler);
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  async function startServer() {
-    try {
-      await connectDB();
-      
-      app.listen(PORT, () => {
-        console.log(`\n✓ Server running on http://localhost:${PORT}`);
-        console.log(`✓ CORS enabled for: ${CORS_ORIGINS.join(', ')}\n`);
-      });
-    } catch (error) {
-      console.error('Failed to start server:', error);
-      process.exit(1);
-    }
-  }
+/* -------------------- LOCAL SERVER ONLY -------------------- */
 
-  startServer();
+// DO NOT start server on Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✓ Local server running on http://localhost:${PORT}`);
+    console.log(`✓ CORS allowed: ${CORS_ORIGINS.join(', ')}`);
+  });
 }
 
-// Export app for Vercel serverless functions
+/* -------------------- EXPORT FOR VERCEL -------------------- */
+
 export default app;
