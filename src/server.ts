@@ -14,9 +14,11 @@ const app: Express = express();
 
 const PORT = Number(process.env.PORT) || 5000;
 
-const CORS_ORIGINS = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-  : ['http://localhost:3000', 'http://localhost:3001'];
+const CORS_ORIGINS = "https://agnitian-pvt-ltd.vercel.app"
+
+// const CORS_ORIGINS = process.env.CORS_ORIGIN
+//   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+//   : ['http://localhost:3000', 'http://localhost:3001'];
 
 /* -------------------- MIDDLEWARE -------------------- */
 
@@ -85,7 +87,7 @@ app.use(errorHandler);
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`✓ Local server running on http://localhost:${PORT}`);
-    console.log(`✓ CORS allowed: ${CORS_ORIGINS.join(', ')}`);
+    console.log(`✓ CORS allowed: ${CORS_ORIGINS}`);
   });
 }
 
